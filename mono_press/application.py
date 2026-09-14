@@ -6,6 +6,7 @@ from .core.state import PlantState
 from .sequences.registry import build_sequences
 from .units.registry import UnitRegistry
 from .units.servo_bus import ServoBusController
+from .units.teensy_bus import TeensyBusController
 
 
 class Application:
@@ -13,7 +14,11 @@ class Application:
         self.root = Path(root)
         self.config = ConfigStore(self.root / "settings" / "poc_config.json")
         self.state = PlantState(port, baud, simulation, self.config)
-        self.bus = ServoBusController(self.state, port, baud, simulation)
+        p01=self.config.snapshot()['p01']
+        if p01.get('transport')=='teensy_usb':
+            self.bus=TeensyBusController(self.state,p01['teensy_port'],115200,simulation,config_store=self.config)
+        else:
+            self.bus = ServoBusController(self.state, port, baud, simulation)
         self.units = UnitRegistry(self.state, self.config, self.bus)
         self.sequences = build_sequences(self.units, self.config)
         self.runtime = LineRuntime(self.state, self.config, self.units, self.sequences)
@@ -40,7 +45,8 @@ class Application:
     def connection_summary(self):
         active = [a for a in self.units.p01_axes if a.installed()]
         responding = sum(bool(a.snapshot.get('connected')) for a in active)
-        parts = [f"P01 UART {'열림' if self.state.serial['connected'] else '미연결'} · 모터 응답 {responding}/{len(active)}"]
+        transport='Teensy USB' if isinstance(self.bus,TeensyBusController) else 'UART'
+        parts = [f"P01 {transport} {'열림' if self.state.serial['connected'] else '미연결'} · 모터 응답 {responding}/{len(active)}"]
         for code, robot in self.units.scaras.items():
             item = robot.axes[0].snapshot
             parts.append(f"{code} Dobot {'USB 연결' if item.get('connected') else '미연결'}" + (f" ({item['error']})" if item.get('error') else ""))

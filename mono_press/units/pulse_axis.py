@@ -75,39 +75,66 @@ class PulseAxis(UnitBase):
         if not self.home_sensor.available():
             self.update(homed=False)
             return False, f"{self.name} 실제 HOME 센서 입력이 연결되지 않았습니다."
-        if self.home_sensor.read():
-            self.update(position=0, homed=True, state="READY", error="", last_command="HOME")
-            return True, f"{self.name} HOME 센서 감지"
+        if self.config_store.snapshot()['p01']['axes'][self.name].get('home_forward_mm') is None:
+            self.update(homed=False)
+            return False, f"{self.name} 호밍 후 전진 거리(mm)를 설정하세요."
         return self.start(lambda:self.home_blocking(cancel=cancel), "HOME")
 
     def home_blocking(self, cancel=None):
-        """Move only in the home direction until the physical sensor is active."""
+        """Find the EE-SX origin, then advance to the material sensing position."""
         p01 = self.config_store.snapshot()["p01"]
         config = p01["axes"][self.name]
+        if not self.installed() or not self.home_sensor.available() or not self.snapshot.get('enabled'):
+            self.update(homed=False, state='HOME_NOT_READY', error='HOME_NOT_READY')
+            return False
+        if config.get('home_forward_mm') is None:
+            self.update(homed=False, state='HOME_OFFSET_REQUIRED', error='HOME_OFFSET_REQUIRED')
+            return False
+        forward = p01_pulses(config['home_forward_mm'], p01)
         maximum = p01_pulses(config["home_search_mm"], p01)
         chunk = p01_pulses(config["home_step_mm"], p01)
         travelled = 0
-        self.cancel.clear()
         self.update(state="HOMING", homed=False, error="", last_command="HOME SEARCH")
         while travelled < maximum:
             if self.cancel.is_set() or (cancel is not None and cancel.is_set()):
                 self.update(state="STOPPED")
                 return False
+            if not self.home_sensor.available():
+                self.update(state='HOME_SENSOR_LOST', error='HOME_SENSOR_LOST', homed=False)
+                return False
             if self.home_sensor.read():
-                self.update(position=0, homed=True, state="READY", error="", direction="-")
-                self.log("HOME", f"{self.name} HOME 센서 감지 · {counts_to_mm(travelled, p01['pulse_per_rev']):.6f} mm 탐색")
-                return True
+                return self._home_forward(forward, p01, cancel)
             step = min(chunk, maximum - travelled)
             if not self._move(-step):
                 return False
             travelled += step
-        if self.home_sensor.read():
+        if self.home_sensor.available() and self.home_sensor.read():
             if self.cancel.is_set() or (cancel is not None and cancel.is_set()):return False
-            self.update(position=0, homed=True, state="READY", error="", direction="-")
-            return True
+            return self._home_forward(forward, p01, cancel)
         self.update(state="HOME_NOT_FOUND", error="HOME_NOT_FOUND", direction="-")
         self.log("ERROR", f"{self.name} HOME 센서 미감지 · 최대 {counts_to_mm(maximum, p01['pulse_per_rev']):.6f} mm")
         return False
+
+    def _home_forward(self, pulses, p01, cancel):
+        if self.cancel.is_set() or (cancel is not None and cancel.is_set()):
+            self.update(state='STOPPED', homed=False)
+            return False
+        # EE-SX is coordinate zero; the ready position remains +offset from it.
+        self.update(position=0, homed=False, state='HOMING', error='', last_command='HOME FORWARD')
+        distance = counts_to_mm(pulses, p01['pulse_per_rev'])
+        self.log('HOME', f'{self.name} EE-SX 원점 감지 · 자재 감지 위치로 {distance:.6f} mm 전진')
+        if not self._move(pulses):
+            self.update(homed=False)
+            return False
+        if self.cancel.is_set() or (cancel is not None and cancel.is_set()):
+            self.update(state='STOPPED', homed=False)
+            return False
+        if not self.home_sensor.available():
+            self.update(state='HOME_SENSOR_LOST', error='HOME_SENSOR_LOST', homed=False)
+            return False
+        self.update(homed=True, state='READY', error='', direction='-', last_command='HOME')
+        self.log('HOME', f'{self.name} HOME 완료 · 원점에서 +{distance:.6f} mm 대기')
+        return True
 
     def _move(self, signed_pulses):
         config = self.config_store.snapshot()["p01"]
@@ -140,8 +167,9 @@ class PulseAxis(UnitBase):
             if self.cancel.is_set():
                 self.update(state="STOPPED")
                 return False
+            detail=getattr(self.bus,'failure_detail',lambda *_:'')(self.address,start_id) or 'MOVE_TIMEOUT'
             self.bus.emergency_stop(self.address)
-            self.update(state="MOVE_TIMEOUT", error="MOVE_TIMEOUT")
+            self.update(state=detail, error=detail)
             return False
         if self.cancel.is_set():
             self.update(state='STOPPED', error='', homed=False)

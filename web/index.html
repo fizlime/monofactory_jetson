@@ -6,8 +6,9 @@
   <title>MONO POC LINE CONTROL</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="main-dashboard.css">
 </head>
-<body>
+<body data-active-page="main">
   <header class="topbar">
     <div class="brand"><img src="assets/mono-logo.png" alt="MONO AUTOMATION"><div><b>POC PRESS LINE</b><span>CONTROL SYSTEM</span></div></div>
     <nav><button class="nav active" data-page="main">MAIN</button><button class="nav" data-page="manual">MANUAL</button><button class="nav" data-page="setting">SETTING</button><button class="nav" data-page="log">LOG</button></nav>
@@ -15,13 +16,24 @@
   </header>
   <main>
     <section class="page active" id="page-main">
-      <div class="title-row"><div><span class="eyebrow">LINE OVERVIEW</span><h1>POC 라인 운전</h1></div><div class="run-controls"><button data-api="/api/line/home">⌂ HOMING</button><button class="primary" data-api="/api/line/start">▶ START ∞</button><button data-action="pause">Ⅱ PAUSE</button><button class="danger" data-api="/api/line/stop">■ STOP</button></div></div>
-      <div class="kpis"><article><span>LINE STATUS</span><strong id="kpi-status">IDLE</strong><small id="kpi-message">운전 준비</small></article><article><span>ACTIVE PROCESS</span><strong id="kpi-active">—</strong><small id="kpi-process-name">대기</small></article><article><span>MES PRODUCTION</span><strong id="kpi-count">0</strong><small>완료 수량</small></article><article><span>TOWER LIGHT</span><strong id="kpi-lamp">OFF</strong><small>RED / GREEN</small></article></div>
-      <section class="panel"><div class="panel-head"><div><span class="eyebrow">LIVE SEQUENCE</span><h2>P00—P06 공정 진행</h2></div><select id="scenario"><option value="normal">정상 시나리오</option><option value="vision_ng">Vision NG</option><option value="press_error">Press 오류</option></select></div><div id="main-process-flow" class="process-flow"></div></section>
-      <section class="panel"><div class="panel-head"><div><span class="eyebrow">LINE MIMIC</span><h2>전체 공정 시뮬레이션</h2></div><span class="legend"><i></i> 실시간 상태</span></div><div id="main-mimic" class="mimic"></div></section>
-      <section class="bottom-grid">
-        <section class="panel main-events"><div class="panel-head"><h2>최근 이벤트</h2><span>LIVE</span></div><div id="main-logs" class="logs"></div></section>
-        <section class="panel alarm-card"><div class="panel-head"><h2>알람</h2><div class="alarm-actions"><button class="small" data-api="/api/line/ack">ACK</button><button class="small" data-api="/api/line/reset">RESET</button></div></div><div id="alarm-content">활성 알람 없음</div></section>
+      <div class="main-commandbar">
+        <div class="main-title"><span class="eyebrow">LINE OVERVIEW</span><h1>POC 라인 운전</h1></div>
+        <div class="run-controls"><button data-api="/api/line/home">⌂ HOMING</button><button class="primary" data-api="/api/line/start">▶ START ∞</button><button data-action="pause">Ⅱ PAUSE</button><button class="danger" data-api="/api/line/stop">■ STOP</button></div>
+      </div>
+      <div class="main-statusbar">
+        <button id="main-fault-link" class="line-health" data-open-alarm aria-label="현재 라인 상태 및 알람 로그"><i></i><strong id="kpi-status">IDLE</strong><span id="kpi-message">운전 준비</span></button>
+        <div class="main-metric"><span>현재 공정</span><strong id="kpi-active">—</strong><small id="kpi-process-name">대기</small></div>
+        <div class="main-metric"><span>생산 수량</span><strong id="kpi-count">0</strong><small>개</small></div>
+        <div class="main-metric lamp-metric"><span>경광등</span><strong id="kpi-lamp">OFF</strong></div>
+      </div>
+      <section class="main-sequence" aria-label="P00부터 P06까지 공정 상태"><div id="main-process-flow" class="process-flow"></div></section>
+      <div class="main-workspace">
+        <section class="panel scene-panel" aria-labelledby="scene-title">
+          <div class="panel-head scene-head"><div><span class="eyebrow">LIVE EQUIPMENT</span><h2 id="scene-title">전체 공정 시뮬레이션</h2></div><div class="scene-tools"><button data-view="fit" class="small" title="전체 설비가 보이도록 시점 복귀">전체 보기</button><button data-view="top" class="small">위에서</button><button data-view="interior" class="small" aria-pressed="true">내부 보기</button><button data-view="tags" class="small" aria-pressed="true">태그</button></div></div>
+          <div id="main-mimic" data-three="true" class="scene-viewport" aria-label="3D 설비: 드래그로 회전, 휠로 확대, 태그를 눌러 설비 선택"><div id="scene-tags" class="scene-tags"></div><div id="scene-loading" class="scene-loading">3D 설비를 불러오는 중…</div><div class="scene-corner"><span id="scene-source">CAD 모델 준비</span><span id="scene-data-mode">상태 수신 대기</span></div></div>
+          <div class="scene-footer"><span><i class="legend-dot"></i> 동작 중 <i class="legend-dot fault"></i> 이상 <i class="legend-dot offline"></i> 미연결</span><span>드래그 회전 · 휠 확대 · 태그 선택</span><label class="scenario-control">SIM <select id="scenario" aria-label="시뮬레이션 시나리오"><option value="normal">정상</option><option value="vision_ng">Vision NG</option><option value="press_error">Press 오류</option></select></label></div>
+        </section>
+        <aside class="main-sidebar">
         <section class="panel vision-panel" id="vision-panel" aria-labelledby="vision-heading">
           <div class="panel-head"><div><span class="eyebrow">P02 · VISION CAMERA</span><h2 id="vision-heading">Basler acA2500-14gm</h2></div><span class="vision-connection" id="vision-connection">영상 미연결</span></div>
           <div class="vision-viewport" aria-label="비전 카메라 영상 영역">
@@ -32,7 +44,9 @@
           <div class="vision-inspection" aria-live="polite"><strong id="vision-result" class="vision-result" data-result="WAIT">WAIT</strong><div><p id="vision-reason">검사 대기</p><small id="vision-time"></small></div></div>
           <p class="vision-note" id="vision-note">카메라 상태 확인 중</p>
         </section>
-      </section>
+          <section class="panel main-log-panel" aria-labelledby="main-log-heading"><div class="panel-head"><div><span class="eyebrow">LIVE EVENTS</span><h2 id="main-log-heading">최근 로그 <small id="main-log-count">0건</small></h2></div><button class="small" data-main-log>전체 로그</button></div><div id="main-recent-logs" class="main-recent-logs" role="log" aria-live="off" aria-label="전체 공정 최근 로그"><p class="main-log-empty">로그 수신 대기</p></div></section>
+        </aside>
+      </div>
     </section>
 
     <section class="page" id="page-manual">
@@ -62,6 +76,7 @@
 
     <section class="page" id="page-log">
       <div class="title-row"><div><span class="eyebrow">EVENT HISTORY</span><h1>실시간 로그</h1><p>공정, 장치 통신, 알람과 설정 변경 이력을 한 화면에서 확인합니다.</p></div><div class="log-live" id="log-live"><i></i><span id="log-live-text">LIVE UPDATE</span></div></div>
+      <section class="panel log-alarm-panel"><div class="panel-head"><h2>현재 알람</h2><div class="alarm-actions"><button class="small" data-api="/api/line/ack">ACK · 확인</button><button class="small" data-api="/api/line/reset">RESET · 리셋</button></div></div><div id="alarm-content">활성 알람 없음</div></section>
       <section class="panel log-window">
         <div class="log-toolbar">
           <div class="log-search"><span>⌕</span><input id="log-search" type="search" placeholder="메시지, 공정 또는 유닛 검색"></div>
@@ -77,6 +92,9 @@
   </main>
 
   <div id="toast" class="toast"></div>
+  <script src="main-dashboard.js"></script>
   <script src="app.js"></script>
+  <script type="module" src="line-scene.js"></script>
 </body>
 </html>
+

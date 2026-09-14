@@ -30,6 +30,7 @@ class P01MaterialFeedSequence(ProcessSequence):
         config = self.settings["p01"]
         axes = [axis for axis in self.axes if config["axes"][axis.name].get("installed", True)]
         total = len(axes)
+        independent=all(getattr(getattr(axis,'bus',None),'independent_axes',False) for axis in axes)
         if not total: raise RuntimeError("사용 가능한 P01 축이 없습니다.")
         ok, message = ctx.units.material.require_material()
         if not ok: raise RuntimeError(message)
@@ -50,9 +51,10 @@ class P01MaterialFeedSequence(ProcessSequence):
             if not ok:
                 raise RuntimeError(message)
             self.repeat_progress(ctx, index + 1, total, f"{axis.name} 자재 밀기 시작")
-            if index < total - 1:
+            if index < total - 1 and not independent:
                 ctx.wait(config["start_gap"])
-            yield True
+            if not independent:yield True
+        if independent:yield True
 
         while any(axis.busy() for axis in axes):
             ctx.checkpoint()

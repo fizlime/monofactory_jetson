@@ -87,7 +87,7 @@ class MillimetreTests(unittest.TestCase):
             move.assert_called_once_with(1200)
 
     def test_automatic_and_home_use_mm_and_preserve_exclusion(self):
-        self.app.config.update(lambda cfg:cfg['p01']['axes']['E0'].update(distance_mm=38.5,home_step_mm=4.8125))
+        self.app.config.update(lambda cfg:cfg['p01']['axes']['E0'].update(distance_mm=38.5,home_step_mm=4.8125,home_forward_mm=9.625))
         for axis in self.app.units.p01_axes[1:]:
             self.app.config.update(lambda cfg,n=axis.name:cfg['p01']['axes'][n].update(installed=False))
         axis=self.app.units.p01_axes[0]
@@ -97,9 +97,10 @@ class MillimetreTests(unittest.TestCase):
         with patch.object(axis,'enable',return_value=(True,'ok')),patch.object(axis,'start_cycle',side_effect=cycle) as start:
             self.app.runtime.by_code['P01'].execute(self.app.runtime._context())
             start.assert_called_once_with(3200,material_authorized=True)
+        axis.update(enabled=True)
         with patch.object(axis.home_sensor,'read',side_effect=[False,True]),patch.object(axis,'_move',return_value=True) as move:
             self.assertTrue(axis.home_blocking())
-            move.assert_called_once_with(-400)
+            self.assertEqual([c.args for c in move.call_args_list],[(-400,),(800,)])
 
     def test_can_adapter_converts_only_at_boundary_and_conflicting_schema_rejected(self):
         self.app.config.update(lambda cfg:cfg['p04'].update(down_mm=2,up_mm=1))

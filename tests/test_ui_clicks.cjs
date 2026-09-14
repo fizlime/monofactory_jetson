@@ -7,9 +7,11 @@ const {chromium}=require('playwright');
   const browser=await chromium.launch({headless:true,...(process.env.UI_BROWSER_PATH?{executablePath:process.env.UI_BROWSER_PATH}:{})});
   try{
     const page=await browser.newPage({viewport:{width:1600,height:1000}});
+    page.on('pageerror',error=>console.error('PAGE ERROR:',error.message));
     await page.route('**/*',route=>route.abort());
     await page.setContent(fs.readFileSync(path.join(root,'web/index.html'),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,''));
     await page.addStyleTag({content:fs.readFileSync(path.join(root,'web/styles.css'),'utf8')});
+    await page.addStyleTag({content:fs.readFileSync(path.join(root,'web/main-dashboard.css'),'utf8')});
     const source=fs.readFileSync(process.env.UI_APP_SOURCE||path.join(root,'web/app.js'),'utf8');
     await page.addScriptTag({content:source.slice(0,source.lastIndexOf("setInterval(()=>$('#clock')"))});
     const config=JSON.parse(fs.readFileSync(path.join(root,'settings/poc_config.json'),'utf8'));

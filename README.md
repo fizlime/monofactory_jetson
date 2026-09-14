@@ -1,3 +1,14 @@
+## 현재 Jetson 버전 · 2026-09-14
+
+- P01: Teensy 4.1 USB와 축별 독립 UART, E0–E3 사용 설정. E3 응답은 확인 대기.
+- P01 HOME: EE-SX 원점 감지 후 설정한 mm만큼 전진. 센서 핀과 전진 거리는 아직 미정.
+- 3D: 넓어진 MAIN 화면과 공정/로그 영역, 로봇팔 끝에 부착된 P02 카메라 및 추적 태그.
+- 기존 전체 공정 순서와 자동 자재 4/4 감지 조건 유지.
+
+배포 기본 USB 포트는 `/dev/ttyACM0`입니다. 장치에 맞는 포트를 설정하세요. 기존 공개 설정을 유지하며 Jetson의 별도 현장 설정 전체를 포함하지 않습니다.
+
+[Teensy 연결](firmware/teensy_p01/README.md) · [P01 호밍](docs/P01_HOME_FORWARD.md)
+
 # MONO POC Press Line
 
 P01~P06 공정을 웹 UI에서 자동운전, 수동시험, 레시피 설정하는 Jetson용 제어 프로젝트입니다. 화면은 Apple 계열의 밝은 Parchment 캔버스, SF 시스템 글꼴, 파란색 액션 버튼과 평면 카드 체계로 구성했습니다.

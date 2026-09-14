@@ -42,6 +42,10 @@ class HomingCoordinator:
                         axis.update(homed=False)
                         pending.append(f'P01 {axis.name} EE-SX 센서 설치 대기')
                         continue
+                    if axis.config_store.snapshot()['p01']['axes'][axis.name].get('home_forward_mm') is None:
+                        axis.update(homed=False)
+                        pending.append(f'P01 {axis.name} 호밍 후 전진 거리 설정 대기')
+                        continue
                     ok,message=axis.enable()
                     if not ok:raise RuntimeError(message)
                     ctx.checkpoint()
@@ -54,7 +58,7 @@ class HomingCoordinator:
                         raise RuntimeError(f'P01 {axis.name} HOME 실패: {axis.snapshot.get("error") or axis.snapshot.get("state")}')
                     self.state.update_process(code,progress=int((index+1)/len(axes)*100),message=f'{axis.name} HOME 완료')
                 if any(item.startswith('P01 ') for item in pending):
-                    self.state.update_process(code,status='WAITING',progress=0,message='EE-SX 원점 센서 설치 대기')
+                    self.state.update_process(code,status='WAITING',progress=0,message=' / '.join(item for item in pending if item.startswith('P01 ')))
                     continue
             elif code=='P04':
                 ok,message=self.units.press.enable()

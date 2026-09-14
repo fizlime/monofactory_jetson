@@ -35,7 +35,8 @@
         "home_sensor": "P01_HOME_1",
         "distance_mm": 770.0,
         "home_search_mm": 770.0,
-        "home_step_mm": 4.8125
+        "home_step_mm": 4.8125,
+        "home_forward_mm": null
       },
       "E1": {
         "address": 225,
@@ -43,7 +44,8 @@
         "home_sensor": "P01_HOME_2",
         "distance_mm": 770.0,
         "home_search_mm": 770.0,
-        "home_step_mm": 4.8125
+        "home_step_mm": 4.8125,
+        "home_forward_mm": null
       },
       "E2": {
         "address": 226,
@@ -51,18 +53,22 @@
         "home_sensor": "P01_HOME_3",
         "distance_mm": 770.0,
         "home_search_mm": 770.0,
-        "home_step_mm": 4.8125
+        "home_step_mm": 4.8125,
+        "home_forward_mm": null
       },
       "E3": {
         "address": 227,
-        "installed": false,
+        "installed": true,
         "home_sensor": "P01_HOME_4",
         "distance_mm": 770.0,
         "home_search_mm": 770.0,
-        "home_step_mm": 4.8125
+        "home_step_mm": 4.8125,
+        "home_forward_mm": null
       }
     },
-    "mm_per_rev": 38.5
+    "mm_per_rev": 38.5,
+    "transport": "teensy_usb",
+    "teensy_port": "/dev/ttyACM0"
   },
   "p02": {
     "inspection_mode": "CAMERA_CHECK",

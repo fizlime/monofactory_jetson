@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .press_calibration import PRESS_STEPS_PER_MM
 from .robot_command import validate_dobot_move
-from .distance_units import legacy_distance_input, mm_distance_output
+from .distance_units import legacy_distance_input, mm_distance_output, p01_pulses
 
 PROCESS_META = [
     {"code": "P00", "name": "자재 감지", "summary": "Arduino D2·D3·D4·D5 자재 4/4 감지 시 투입 허용", "unit_count": 4},
@@ -29,6 +29,8 @@ DEFAULT_CONFIG = {
     "p00": {"driver": "unconfigured", "gpio_chip": "gpiochip0", "gpio_line": 105, "active_low": True, "debounce_ms": 100, "wait_timeout": 30,
             "serial_port": "/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0", "serial_baud": 115200, "stale_timeout": 3},
     "p01": {
+        "transport": "uart",
+        "teensy_port": "/dev/ttyACM0",
         "pulse_per_rev": 3200,
         "speed_gear": 16,
         "start_gap": 0.05,
@@ -44,6 +46,7 @@ DEFAULT_CONFIG = {
                 "manual_reverse_pulses": 16000,
                 "home_search_pulses": 64000,
                 "home_step_pulses": 400,
+                "home_forward_mm": None,
                 "home_sensor": f"P01_HOME_{i + 1}",
             }
             for i in range(4)
@@ -206,6 +209,8 @@ def validate_config(raw: dict) -> dict:
     p00["debounce_ms"] = _number(p00["debounce_ms"], 50, 2000, "감지 안정 시간", True)
     p00["wait_timeout"] = _number(p00["wait_timeout"], 1, 300, "감지 대기 제한")
     p01 = base["p01"]
+    if p01['transport'] not in ('uart','teensy_usb'):raise ValueError('P01 통신 방식 오류')
+    if not re.fullmatch(r'/dev/(?:serial/by-id/[A-Za-z0-9_.:-]+|ttyACM[0-9]+)|COM[0-9]+',str(p01['teensy_port'])):raise ValueError('Teensy USB 포트 오류')
     p01["pulse_per_rev"] = _number(p01["pulse_per_rev"], 1, 100000, "회전당 펄스", True)
     p01["speed_gear"] = _number(p01["speed_gear"], 1, 127, "P01 속도", True)
     p01["start_gap"] = _number(p01["start_gap"], 0, 1, "축 시작 간격")
@@ -237,6 +242,10 @@ def validate_config(raw: dict) -> dict:
             f"{name} HOME 확인 간격", True,
         )
         axis["home_sensor"] = f"P01_HOME_{index + 1}"
+        forward = axis.get('home_forward_mm')
+        if forward is not None:
+            p01_pulses(forward, p01)  # Positive, finite, representable motor distance.
+            axis['home_forward_mm'] = float(forward)
 
     if not any(a["installed"] for a in p01["axes"].values()): raise ValueError("P01 사용 축을 하나 이상 선택하세요.")
 

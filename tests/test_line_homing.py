@@ -20,6 +20,7 @@ class LineHomingTests(unittest.TestCase):
         cfg = store.snapshot()
         cfg['scara_p05']['shared_with'] = 'P03'
         cfg['p01']['axes']['E3']['installed'] = False
+        for axis in cfg['p01']['axes'].values(): axis['home_forward_mm'] = .1203125
         store.save(cfg)
         self.app = Application(root, '/dev/not-used', 38400, True)
         self.runtime = self.app.runtime
