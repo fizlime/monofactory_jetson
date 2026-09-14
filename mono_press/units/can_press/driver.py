@@ -20,6 +20,7 @@ class CanPressDriver:
     and UI can keep their current interfaces. STOP only raises the controller's
     cancellation flag; the worker then sends F7 from the same USB thread.
     """
+    RECONNECT_SECONDS = 1.0
 
     def __init__(self, state, axis, home_sensor, config_store):
         self.state = state
@@ -35,6 +36,49 @@ class CanPressDriver:
         self.thread = None
         self.connected = False
         self._origin_encoder = None
+        self.auto_connect = threading.Event()
+        self.last_connection_error = None
+
+    def _offline(self, exc):
+        self.connected = False
+        self._origin_encoder = None
+        with self.guard:
+            self.generation += 1  # Never replay queued movement after link loss.
+            self.cancel.set()
+        values = dict(connected=False, enabled=False, homed=False, state='OFFLINE',
+                      error=str(exc), command_rpm=0, reconnecting=self.auto_connect.is_set())
+        if any(self.axis.snapshot.get(k)!=v for k,v in values.items()):self.axis.update(**values)
+        self.home_sensor.update(connected=False, home=False, state='OFFLINE')
+        if self.last_connection_error != str(exc):
+            self.state.record('ERROR',f'P04 CAN 연결 대기 · {exc}','P04',self.axis.unit_id)
+            self.last_connection_error = str(exc)
+
+    def _open(self):
+        self._active_config = self._config()
+        link = CanLink(self._active_config)
+        try:
+            link.cancel_requested = self.cancel.is_set
+            controller = Controller(link,self._active_config,self.cancel,self._emit)
+            link.ready()  # Queries only: no ENABLE, HOME or movement.
+            result = link.sample()
+            serial_number = getattr(link,'usb_serial','')
+            if not isinstance(serial_number,str):serial_number = ''
+            if serial_number and not self._active_config.usb_serial:
+                self.config_store.update(lambda c:c['p04']['can'].__setitem__('usb_serial',serial_number))
+            self._origin_encoder = None
+            self.axis.update(homed=False, enabled=False)
+            self._emit('sample',result)
+            self.connected = True
+            self.last_connection_error = None
+            self.axis.update(connected=True, simulated=False, transport='USB CAN', error='',
+                             state='DISABLED', reconnecting=False, usb_serial=serial_number)
+            self.home_sensor.update(connected=True, simulated=False)
+            self.state.record('CAN','P04 candleLight · SERVO57D 연결 완료 · 호밍 필요','P04',self.axis.unit_id)
+            return link,controller,result
+        except BaseException:
+            try:link.close()
+            except Exception:pass
+            raise
 
     def _config(self, speed=None):
         p04 = self.config_store.snapshot()["p04"]
@@ -76,7 +120,28 @@ class CanPressDriver:
         controller = None
         try:
             while True:
-                _, _, generation, action, args, answer = self.commands.get()
+                try:
+                    _, _, generation, action, args, answer = self.commands.get(timeout=self.RECONNECT_SECONDS)
+                except queue.Empty:
+                    if not self.auto_connect.is_set():continue
+                    # Idle work shares the same USB worker as every command.
+                    try:
+                        with self.guard:
+                            if self.stop_pending:continue
+                            self.cancel.clear()
+                        if link is None:
+                            link,controller,_ = self._open()
+                        else:
+                            self._emit('sample',link.sample())
+                    except Cancelled:
+                        pass  # Priority STOP/close will be handled next.
+                    except Exception as exc:
+                        self._offline(exc)
+                        if link is not None:
+                            try:link.close()
+                            except Exception:pass
+                        link = controller = None
+                    continue
                 if action == "close":
                     try:
                         if link is not None:
@@ -106,18 +171,14 @@ class CanPressDriver:
                                 raise Cancelled("PRESS STOPPED")
                             self.cancel.clear()
                     if action == "connect":
+                        if link is not None and self.connected:
+                            answer.put((True,None))
+                            continue
                         if link is not None:
                             link.close()
                             link = controller = None
                         self.connected = False
-                        self._active_config = self._config()
-                        link = CanLink(self._active_config)
-                        link.cancel_requested = self.cancel.is_set
-                        controller = Controller(link, self._active_config, self.cancel, self._emit)
-                        link.ready()
-                        result = link.sample()
-                        self._emit("sample", result)
-                        self.connected = True
+                        link,controller,result = self._open()
                     else:
                         if link is None or controller is None:
                             raise RuntimeError("P04 USB CAN이 연결되지 않았습니다.")
@@ -143,14 +204,9 @@ class CanPressDriver:
                             raise RuntimeError(f"지원하지 않는 CAN 작업: {action}")
                     answer.put((True, result))
                 except BaseException as exc:
-                    if action == 'connect':
-                        self.connected = False
-                        if link is not None:
-                            try:
-                                link.close()  # Release USB claim after failed handshake.
-                            except Exception:
-                                pass
-                        link = controller = None
+                    if action == 'stop':
+                        with self.guard:
+                            if generation == self.generation:self.stop_pending = False
                     # HOME has no jog() finally block. Always send F7 when an
                     # active motion fails or is cancelled, on this USB thread.
                     if action in {"home", "move"} and link is not None:
@@ -158,6 +214,12 @@ class CanPressDriver:
                             link.stop()
                         except Exception as stop_exc:
                             exc = RuntimeError(f"PRESS 정지 확인 실패: {stop_exc}")
+                    if not isinstance(exc,Cancelled):
+                        self._offline(exc)
+                        if link is not None:
+                            try:link.close()
+                            except Exception:pass
+                        link = controller = None
                     answer.put((False, exc))
         finally:
             self.connected = False
@@ -188,21 +250,15 @@ class CanPressDriver:
         return value
 
     def connect(self):
+        self.auto_connect.set()
         if self.connected:
             return True
         self.axis.update(homed=False)
         self._origin_encoder = None
         try:
             self._submit("connect", timeout=5)
-            self.axis.update(connected=True, simulated=False, transport="USB CAN", error="", state="DISABLED")
-            self.home_sensor.update(connected=True, simulated=False)
-            self.state.record("CAN", "P04 candleLight · SERVO57D 연결 완료", "P04", self.axis.unit_id)
             return True
         except Exception as exc:
-            self.connected = False
-            self.axis.update(connected=False, simulated=False, enabled=False, state="OFFLINE", error=str(exc))
-            self.home_sensor.update(connected=False, simulated=False, state="OFFLINE")
-            self.state.record("ERROR", f"P04 CAN 연결 실패 · {exc}", "P04", self.axis.unit_id)
             return False
 
     def ready(self):
@@ -228,6 +284,7 @@ class CanPressDriver:
         self._submit("stop", timeout=5)
 
     def close(self):
+        self.auto_connect.clear()
         self.axis.update(homed=False)
         with self.guard:
             self.cancel.set()

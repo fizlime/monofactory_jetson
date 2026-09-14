@@ -25,6 +25,7 @@ class Cancelled(ControlError):
 class Config:
     can_id: int = 1
     bitrate: int = 500000
+    usb_serial: str = ''
     mm_per_rev: float = PRESS_INTERNAL_MM_PER_REV
     steps_per_rev_original: int = PRESS_INTERNAL_STEPS_PER_REV
     up_sign: int = 1
@@ -56,6 +57,10 @@ class Config:
     def __post_init__(self):
         for field in fields(self):
             value = getattr(self, field.name)
+            if field.name == 'usb_serial':
+                if not isinstance(value,str) or len(value)>128 or any(ord(c)<32 for c in value):
+                    raise ValueError('USB CAN 고유번호 형식 오류')
+                continue
             if field.name == 'home_active_low':
                 if type(value) is not bool:
                     raise ValueError('home_active_low는 true/false여야 합니다.')

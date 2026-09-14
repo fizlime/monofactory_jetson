@@ -32,6 +32,19 @@ const {chromium}=require('playwright');
       }
       draft=structuredClone(config);bind();update(plant);document.querySelector('[data-page="manual"]').click();
     },config);
+    // Drive release is a first-class P01 manual control, beside ENABLE and STOP.
+    for(let i=0;i<4;i++){
+      const bar=page.locator(`[data-unit-card="P01_E${i}"] .p01-powerbar`);
+      assert.equal(await bar.locator('[data-command="DISABLE"]').count(),1);
+      const sizes=await bar.locator('button').evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect()));
+      assert(sizes.every(r=>r.height>=40&&r.width>50),'All power actions remain usable');
+    }
+    const disable=page.locator('[data-unit="P01_E0"][data-command="DISABLE"]');
+    await disable.click();
+    assert.equal(await page.evaluate(()=>calls.filter(c=>c.path==='/api/unit/P01_E0/command'&&c.body?.action==='DISABLE').length),1);
+    await page.evaluate(()=>{plant.units.P01_E0.enabled=false;renderManual();});
+    assert.equal(await disable.isEnabled(),true,'Allow explicit disable even when enable feedback is unknown');
+    await page.evaluate(()=>{plant.units.P01_E0.enabled=true;renderManual();});
     // Press on a nested label, change both sensor and another motor's state,
     // then release. The ordinary click must reach the original control once.
     await page.locator('[data-manual-amount="P01_E0_FORWARD"]').fill('123');

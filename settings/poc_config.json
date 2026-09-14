@@ -176,7 +176,8 @@
       "poll_seconds": 0.02,
       "can_timeout_seconds": 0.15,
       "acceleration": 1,
-      "deceleration_advance_mm": 6.666666666666667
+      "deceleration_advance_mm": 6.666666666666667,
+      "usb_serial": ""
     },
     "down_mm": 2.0,
     "up_mm": 2.0,

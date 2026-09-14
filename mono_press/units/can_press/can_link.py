@@ -17,6 +17,14 @@ if DEPS.is_dir():
 class CanError(RuntimeError):
     pass
 
+def select_adapter(devices, serial_number=''):
+    if serial_number:
+        devices = [d for d in devices if d.serial_number == serial_number]
+        if len(devices) != 1:
+            raise CanError(f'지정한 USB CAN({serial_number}) 연결 대기 · 발견 {len(devices)}개')
+    elif len(devices) != 1:
+        raise CanError(f'candleLight USB CAN을 1개 연결하세요. 현재 {len(devices)}개입니다.')
+    return devices[0]
 
 def packet(node: int, payload: list[int]) -> bytes:
     if not 1 <= node <= 2047 or not 1 <= len(payload) <= 7:
@@ -55,10 +63,9 @@ class CanLink:
         self.stopping = False
         self.controller_notices = 0
         devices = list(libusb_package.find(find_all=True, idVendor=0x1D50, idProduct=0x606F))
-        if len(devices) != 1:
-            raise CanError(f'candleLight USB CAN을 1개 연결하세요. 현재 {len(devices)}개입니다.')
-        self.raw = devices[0]
+        self.raw = select_adapter(devices, config.usb_serial)
         try:
+            self.usb_serial = self.raw.serial_number or ''
             # Linux normally binds candleLight to gs_usb. Own the interface
             # only while this application is connected, then restore it.
             if sys.platform.startswith('linux') and self.raw.is_kernel_driver_active(0):

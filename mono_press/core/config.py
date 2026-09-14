@@ -90,6 +90,7 @@ DEFAULT_CONFIG = {
         "home_sensor": "P04_HOME_1",
         "saved_positions": {"PRESS_HOME": 0, "PRESS_BOTTOM": 64000},
         "can": {
+            "usb_serial": "",
             "can_id": 1,
             "bitrate": 500000,
             "steps_per_mm": PRESS_STEPS_PER_MM,
@@ -329,6 +330,8 @@ def validate_config(raw: dict) -> dict:
     p04["up_steps"] = _number(p04["up_steps"], 1, 0x7FFFFFFF, "프레스 상승 스텝", True)
     p04["speed"] = _number(p04["speed"], 1, 100 if p04["driver"] == "can_usb" else 100000, "프레스 속도", True)
     can = p04["can"]
+    if not isinstance(can['usb_serial'],str) or len(can['usb_serial'])>128 or any(ord(c)<32 for c in can['usb_serial']):
+        raise ValueError('USB CAN 고유번호 형식 오류')
     can["can_id"] = _number(can["can_id"], 1, 2047, "P04 CAN ID", True)
     can["bitrate"] = _number(can["bitrate"], 125000, 1000000, "P04 CAN bitrate", True)
     if can["bitrate"] not in {125000, 250000, 500000, 1000000}:

@@ -169,11 +169,11 @@ function renderLinearManual(u){
         const power='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9M6.4 5.8a8 8 0 1 0 11.2 0"/></svg>';
         const stop='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
         html+=`<article class="unit-card p01-card ${press?'p04-card':''}" data-unit-card="${esc(a.id)}"><header><div class="p01-title"><span class="p01-axis">${press?'P04':'E'+a.id.slice(-1)}</span><h3>${displayEsc(a.label)}</h3></div><span class="ustate ustate--${manualStateTone(a)}">${excluded?'임시 제외':esc(a.state)}</span></header>
-          <div class="p01-powerbar">${btn(a.id,'ENABLE',power+'<span>ENABLE</span>','primary p01-enable',enabled||moving||excluded)}${btn(a.id,'STOP',stop+'<span>STOP</span>','danger p01-stop')}</div>
+          <div class="p01-powerbar">${btn(a.id,'ENABLE',power+'<span>ENABLE</span>','primary p01-enable',enabled||moving||excluded)}${!press?btn(a.id,'DISABLE',power+'<span>DISABLE</span>','p01-disable',excluded||moving||['RUNNING','PAUSED','PAUSE_REQUESTED'].includes(plant.line.status)):''}${btn(a.id,'STOP',stop+'<span>STOP</span>','danger p01-stop')}</div>
           ${!press?`<p class="help">${excluded?'임시 제외한 축입니다.':!enabled?'연결 · EN 상태 확인 또는 ENABLE을 먼저 누르세요.':'수동 이동은 센서 감지와 무관합니다. 전진·후진 이동량을 입력하세요.'}</p>`:''}
           <div class="reading"><span id="manual-reading-${a.id}"></span></div>
           <div class="p01-travel"><div class="p01-travel-row">${manualAmountInput(a.id,press?'DOWN':'FORWARD',press?'내리기':'전진')}${btn(a.id,press?'DOWN':'FORWARD',press?'내리기 <span aria-hidden="true">↓</span>':'전진 <span aria-hidden="true">→</span>','primary',blocked)}</div><div class="p01-travel-row">${manualAmountInput(a.id,press?'UP':'REVERSE',press?'올리기':'후진')}${btn(a.id,press?'UP':'REVERSE',press?'<span aria-hidden="true">↑</span> 올리기':'<span aria-hidden="true">←</span> 후진','',blocked)}</div></div>
-          <div class="p01-utilities">${btn(a.id,'HOME',press?'HOME 센서 찾기':'HOME · 원점 후 전진','',excluded||!enabled||moving||(!press&&!home?.connected))}${btn(a.id,'CYCLE',press?'CYCLE':'수동 왕복 시험','',excluded||!enabled||moving)}</div><div class="p01-disable-row">${btn(a.id,'DISABLE','모터 비활성화 · DISABLE','p01-disable',!enabled||moving)}</div></article>`;
+          <div class="p01-utilities">${btn(a.id,'HOME',press?'HOME 센서 찾기':'HOME · 원점 후 전진','',excluded||!enabled||moving||(!press&&!home?.connected))}${btn(a.id,'CYCLE',press?'CYCLE':'수동 왕복 시험','',excluded||!enabled||moving)}</div>${press?`<div class="p01-disable-row">${btn(a.id,'DISABLE','모터 비활성화 · DISABLE','p01-disable',!enabled||moving)}</div>`:''}</article>`;
       }
     }
     renderHtml(root,html+'<p class="help">각 방향의 이동량을 입력한 뒤 버튼을 누르세요. 입력값은 이 화면에서 유지되며 자동운전 설정에는 반영되지 않습니다.</p>');
