@@ -1,0 +1,392 @@
+{
+  "line": {
+    "process_delays": {
+      "P00": 0.0,
+      "P01": 0.0,
+      "P02": 0.0,
+      "P03": 0.0,
+      "P04": 0.0,
+      "P05": 0.0,
+      "P06": 0.0
+    }
+  },
+  "p00": {
+    "driver": "arduino_serial",
+    "gpio_chip": "gpiochip0",
+    "gpio_line": 105,
+    "active_low": true,
+    "debounce_ms": 100,
+    "wait_timeout": 30.0,
+    "serial_port": "/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0",
+    "serial_baud": 115200,
+    "stale_timeout": 3.0
+  },
+  "p01": {
+    "pulse_per_rev": 3200,
+    "speed_gear": 16,
+    "start_gap": 0.05,
+    "reverse_dwell": 0.2,
+    "command_timeout": 1.0,
+    "move_timeout": 6.0,
+    "axes": {
+      "E0": {
+        "address": 224,
+        "installed": true,
+        "home_sensor": "P01_HOME_1",
+        "distance_mm": 770.0,
+        "home_search_mm": 770.0,
+        "home_step_mm": 4.8125
+      },
+      "E1": {
+        "address": 225,
+        "installed": true,
+        "home_sensor": "P01_HOME_2",
+        "distance_mm": 770.0,
+        "home_search_mm": 770.0,
+        "home_step_mm": 4.8125
+      },
+      "E2": {
+        "address": 226,
+        "installed": true,
+        "home_sensor": "P01_HOME_3",
+        "distance_mm": 770.0,
+        "home_search_mm": 770.0,
+        "home_step_mm": 4.8125
+      },
+      "E3": {
+        "address": 227,
+        "installed": false,
+        "home_sensor": "P01_HOME_4",
+        "distance_mm": 770.0,
+        "home_search_mm": 770.0,
+        "home_step_mm": 4.8125
+      }
+    },
+    "mm_per_rev": 38.5
+  },
+  "p02": {
+    "inspection_mode": "CAMERA_CHECK",
+    "camera_name": "Basler",
+    "camera_serial": "24260480",
+    "preview_fps": 8,
+    "inspection_time": 0.1,
+    "score_threshold": 0.85
+  },
+  "scara": {
+    "driver": "dobot_serial",
+    "speed": 100,
+    "positions": {
+      "HOME": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "BUFFER_PICK": [
+        12.0,
+        22.0,
+        -8.0,
+        0.0
+      ],
+      "BUFFER_PICK_1": [
+        12.0,
+        22.0,
+        -8.0,
+        0.0
+      ],
+      "BUFFER_PICK_2": [
+        12.0,
+        17.0,
+        -8.0,
+        0.0
+      ],
+      "BUFFER_PICK_3": [
+        12.0,
+        12.0,
+        -8.0,
+        0.0
+      ],
+      "BUFFER_PICK_4": [
+        12.0,
+        7.0,
+        -8.0,
+        0.0
+      ],
+      "PRESS_LOAD": [
+        35.0,
+        10.0,
+        -15.0,
+        90.0
+      ],
+      "PRESS_UNLOAD": [
+        35.0,
+        10.0,
+        -10.0,
+        90.0
+      ],
+      "OUTPUT": [
+        5.0,
+        -28.0,
+        -6.0,
+        180.0
+      ],
+      "FDAFDA": [
+        35.0,
+        10.0,
+        -15.0,
+        90.0
+      ]
+    },
+    "port": "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
+    "position_meta": {}
+  },
+  "p04": {
+    "driver": "can_usb",
+    "speed": 100,
+    "home_sensor": "P04_HOME_1",
+    "can": {
+      "can_id": 1,
+      "bitrate": 500000,
+      "steps_per_mm": 600,
+      "up_sign": 1,
+      "home_input_bit": 0,
+      "home_active_low": true,
+      "slow_zone_mm": 10,
+      "home_approach_mm": 5,
+      "repeat_count": 3,
+      "ramp_rpm_per_second": 75.0,
+      "fast_delay_us": 200,
+      "slow_delay_us": 800,
+      "home_start_delay_us": 1200,
+      "home_seek_delay_us": 400,
+      "home_fine_delay_us": 1800,
+      "home_start_mm": 3,
+      "home_backoff_mm": 2,
+      "max_home_search_mm": 350,
+      "home_fine_search_mm": 5,
+      "home_escape_mm": 10,
+      "extra_home_search_mm": 5,
+      "lookahead_mm": 1.0,
+      "poll_seconds": 0.02,
+      "can_timeout_seconds": 0.15,
+      "acceleration": 1,
+      "deceleration_advance_mm": 6.666666666666667
+    },
+    "down_mm": 2.0,
+    "up_mm": 2.0,
+    "saved_positions_mm": {
+      "PRESS_HOME": 0.0,
+      "PRESS_BOTTOM": 106.66666666666667
+    }
+  },
+  "press_recipe": {
+    "version": 3,
+    "actions": [
+      {
+        "type": "SCARA_MOVE",
+        "target": "BUFFER_PICK_1",
+        "robot": "P03"
+      },
+      {
+        "type": "GRIPPER",
+        "target": "CLOSE",
+        "robot": "P03"
+      },
+      {
+        "type": "SCARA_MOVE",
+        "target": "PRESS_LOAD",
+        "robot": "P03"
+      },
+      {
+        "type": "GRIPPER",
+        "target": "OPEN",
+        "robot": "P03"
+      },
+      {
+        "type": "PRESS_DOWN",
+        "target": "DOWN_MM"
+      },
+      {
+        "type": "PRESS_UP",
+        "target": "UP_MM"
+      },
+      {
+        "type": "SCARA_MOVE",
+        "target": "BUFFER_PICK_2",
+        "robot": "P03"
+      },
+      {
+        "type": "GRIPPER",
+        "target": "CLOSE",
+        "robot": "P03"
+      },
+      {
+        "type": "SCARA_MOVE",
+        "target": "PRESS_LOAD",
+        "robot": "P03"
+      },
+      {
+        "type": "GRIPPER",
+        "target": "OPEN",
+        "robot": "P03"
+      },
+      {
+        "type": "PRESS_DOWN",
+        "target": "DOWN_MM"
+      },
+      {
+        "type": "PRESS_UP",
+        "target": "UP_MM"
+      },
+      {
+        "type": "SCARA_MOVE",
+        "target": "BUFFER_PICK_3",
+        "robot": "P03"
+      },
+      {
+        "type": "GRIPPER",
+        "target": "CLOSE",
+        "robot": "P03"
+      },
+      {
+        "type": "SCARA_MOVE",
+        "target": "PRESS_LOAD",
+        "robot": "P03"
+      },
+      {
+        "type": "GRIPPER",
+        "target": "OPEN",
+        "robot": "P03"
+      },
+      {
+        "type": "PRESS_DOWN",
+        "target": "DOWN_MM"
+      },
+      {
+        "type": "PRESS_UP",
+        "target": "UP_MM"
+      },
+      {
+        "type": "SCARA_MOVE",
+        "target": "BUFFER_PICK_4",
+        "robot": "P03"
+      },
+      {
+        "type": "GRIPPER",
+        "target": "CLOSE",
+        "robot": "P03"
+      },
+      {
+        "type": "SCARA_MOVE",
+        "target": "PRESS_LOAD",
+        "robot": "P03"
+      },
+      {
+        "type": "GRIPPER",
+        "target": "OPEN",
+        "robot": "P03"
+      },
+      {
+        "type": "SCARA_MOVE",
+        "target": "PRESS_UNLOAD",
+        "robot": "P05"
+      },
+      {
+        "type": "GRIPPER",
+        "target": "CLOSE",
+        "robot": "P05"
+      },
+      {
+        "type": "SCARA_MOVE",
+        "target": "OUTPUT",
+        "robot": "P05"
+      },
+      {
+        "type": "GRIPPER",
+        "target": "OPEN",
+        "robot": "P05"
+      },
+      {
+        "type": "SCARA_MOVE",
+        "target": "HOME",
+        "robot": "P05"
+      }
+    ]
+  },
+  "p06": {
+    "mes_endpoint": "http://127.0.0.1:9000/api/result",
+    "line_code": "POC-LINE-01",
+    "green_hold_seconds": 0.6,
+    "relay_active_level": "HIGH"
+  },
+  "scara_p05": {
+    "driver": "dobot_serial",
+    "speed": 100,
+    "positions": {
+      "HOME": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "BUFFER_PICK": [
+        12.0,
+        22.0,
+        -8.0,
+        0.0
+      ],
+      "BUFFER_PICK_1": [
+        12.0,
+        22.0,
+        -8.0,
+        0.0
+      ],
+      "BUFFER_PICK_2": [
+        12.0,
+        17.0,
+        -8.0,
+        0.0
+      ],
+      "BUFFER_PICK_3": [
+        12.0,
+        12.0,
+        -8.0,
+        0.0
+      ],
+      "BUFFER_PICK_4": [
+        12.0,
+        7.0,
+        -8.0,
+        0.0
+      ],
+      "PRESS_LOAD": [
+        35.0,
+        10.0,
+        -15.0,
+        90.0
+      ],
+      "PRESS_UNLOAD": [
+        35.0,
+        10.0,
+        -10.0,
+        90.0
+      ],
+      "OUTPUT": [
+        5.0,
+        -28.0,
+        -6.0,
+        180.0
+      ],
+      "FDAFDA": [
+        35.0,
+        10.0,
+        -15.0,
+        90.0
+      ]
+    },
+    "port": "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
+    "position_meta": {},
+    "shared_with": "P03"
+  },
+  "distance_unit": "mm"
+}

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MONO POC LINE CONTROL</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="assets/mono-logo.png" alt="MONO AUTOMATION"><div><b>POC PRESS LINE</b><span>CONTROL SYSTEM</span></div></div>
+    <nav><button class="nav active" data-page="main">MAIN</button><button class="nav" data-page="manual">MANUAL</button><button class="nav" data-page="setting">SETTING</button><button class="nav" data-page="log">LOG</button></nav>
+    <div class="system"><span id="clock">--:--:--</span><div class="mode-switch"><button id="mode-sim" data-mode="SIMULATION">SIM</button><button id="mode-real" data-mode="REAL">REAL</button></div><i id="connection-dot"></i><b id="connection-text">CONNECTING</b></div>
+  </header>
+  <main>
+    <section class="page active" id="page-main">
+      <div class="title-row"><div><span class="eyebrow">LINE OVERVIEW</span><h1>POC 라인 운전</h1></div><div class="run-controls"><button data-api="/api/line/home">⌂ HOMING</button><button class="primary" data-api="/api/line/start">▶ START ∞</button><button data-action="pause">Ⅱ PAUSE</button><button class="danger" data-api="/api/line/stop">■ STOP</button></div></div>
+      <div class="kpis"><article><span>LINE STATUS</span><strong id="kpi-status">IDLE</strong><small id="kpi-message">운전 준비</small></article><article><span>ACTIVE PROCESS</span><strong id="kpi-active">—</strong><small id="kpi-process-name">대기</small></article><article><span>MES PRODUCTION</span><strong id="kpi-count">0</strong><small>완료 수량</small></article><article><span>TOWER LIGHT</span><strong id="kpi-lamp">OFF</strong><small>RED / GREEN</small></article></div>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">LIVE SEQUENCE</span><h2>P00—P06 공정 진행</h2></div><select id="scenario"><option value="normal">정상 시나리오</option><option value="vision_ng">Vision NG</option><option value="press_error">Press 오류</option></select></div><div id="main-process-flow" class="process-flow"></div></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">LINE MIMIC</span><h2>전체 공정 시뮬레이션</h2></div><span class="legend"><i></i> 실시간 상태</span></div><div id="main-mimic" class="mimic"></div></section>
+      <section class="bottom-grid">
+        <section class="panel main-events"><div class="panel-head"><h2>최근 이벤트</h2><span>LIVE</span></div><div id="main-logs" class="logs"></div></section>
+        <section class="panel alarm-card"><div class="panel-head"><h2>알람</h2><div class="alarm-actions"><button class="small" data-api="/api/line/ack">ACK</button><button class="small" data-api="/api/line/reset">RESET</button></div></div><div id="alarm-content">활성 알람 없음</div></section>
+        <section class="panel vision-panel" id="vision-panel" aria-labelledby="vision-heading">
+          <div class="panel-head"><div><span class="eyebrow">P02 · VISION CAMERA</span><h2 id="vision-heading">Basler acA2500-14gm</h2></div><span class="vision-connection" id="vision-connection">영상 미연결</span></div>
+          <div class="vision-viewport" aria-label="비전 카메라 영상 영역">
+            <img id="vision-frame" alt="Basler 카메라 실시간 영상" hidden>
+            <div class="vision-placeholder" id="vision-placeholder"><span class="camera-outline" aria-hidden="true"></span><b>카메라 연결 대기</b><span id="vision-stream-message">REAL 모드에서 카메라 연결 시 자동으로 표시됩니다.</span></div>
+            <span class="vision-resolution" id="vision-resolution">2592 × 1944 · 4:3</span>
+          </div>
+          <div class="vision-inspection" aria-live="polite"><strong id="vision-result" class="vision-result" data-result="WAIT">WAIT</strong><div><p id="vision-reason">검사 대기</p><small id="vision-time"></small></div></div>
+          <p class="vision-note" id="vision-note">카메라 상태 확인 중</p>
+        </section>
+      </section>
+    </section>
+
+    <section class="page" id="page-manual">
+      <div id="manual-lock" class="manual-lock"><div><b>공정 실행 / 호밍 진행 중</b><span>STOP 후 수동 제어를 사용할 수 있습니다.</span><button class="danger" data-api="/api/line/stop">■ STOP</button><p><button class="danger" data-unit="P03_SCARA_GRIPPER" data-command="STOP">P03 그리퍼 STOP</button> <button class="danger" data-unit="P05_SCARA_GRIPPER" data-command="STOP">P05 그리퍼 STOP</button></p><span>그리퍼 STOP: 구동 OFF 및 통합 순서 정지</span></div></div>
+      <div class="title-row"><div><span class="eyebrow">INDEPENDENT TEST</span><h1>수동 제어</h1><p>설비 배치에서 공정을 선택한 뒤 각 유닛을 독립 시험합니다.</p></div><div class="mode-badge">AUTO 운전 중 수동 제어 잠금</div></div>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">SELECT PROCESS</span><h2>설비 배치</h2></div></div><div id="manual-mimic" class="mimic selectable"></div></section>
+      <div class="manual-workspace" id="manual-workspace">
+        <section class="panel"><div class="manual-head"><div><span id="manual-code" class="process-code">P01</span><div><h2 id="manual-name">자재 투입</h2><p id="manual-summary"></p></div></div><button id="home-process" hidden>⌂ HOMING</button><button id="run-process" class="primary">선택 공정 단독 실행</button></div><div id="manual-controls" class="unit-grid"></div></section>
+        <section class="panel vision-panel" id="manual-vision-panel" aria-labelledby="manual-vision-heading" hidden>
+          <div class="panel-head"><div><span class="eyebrow">P02 · VISION CAMERA</span><h2 id="manual-vision-heading">Basler 카메라</h2></div><span class="vision-connection" id="manual-vision-connection">영상 미연결</span></div>
+          <div class="vision-viewport" aria-label="수동 제어 비전 카메라 영상 영역">
+            <img id="manual-vision-frame" alt="Basler 카메라 실시간 영상" hidden>
+            <div class="vision-placeholder" id="manual-vision-placeholder"><span class="camera-outline" aria-hidden="true"></span><b>카메라 연결 대기</b><span id="manual-vision-stream-message">REAL 모드에서 카메라 연결 시 자동으로 표시됩니다.</span></div>
+            <span class="vision-resolution" id="manual-vision-resolution">2592 × 1944 · 4:3</span>
+          </div>
+          <div class="vision-inspection" aria-live="polite"><strong id="manual-vision-result" class="vision-result" data-result="WAIT">WAIT</strong><div><p id="manual-vision-reason">검사 대기</p><small id="manual-vision-time"></small></div></div>
+          <p class="vision-note" id="manual-vision-note">카메라 상태 확인 중</p>
+        </section>
+      </div>
+    </section>
+
+    <section class="page" id="page-setting">
+      <div class="title-row"><div><span class="eyebrow">LINE ENGINEERING</span><h1>설정 · 레시피</h1><p>공정별 동작값, 위치, 순서와 공정 사이 대기시간을 설정합니다.</p></div><button id="save-config" class="primary">설정 저장</button></div>
+      <div id="setting-tabs" class="setting-tabs"></div>
+      <section class="panel settings-panel"><div id="settings-content"></div></section>
+    </section>
+
+    <section class="page" id="page-log">
+      <div class="title-row"><div><span class="eyebrow">EVENT HISTORY</span><h1>실시간 로그</h1><p>공정, 장치 통신, 알람과 설정 변경 이력을 한 화면에서 확인합니다.</p></div><div class="log-live" id="log-live"><i></i><span id="log-live-text">LIVE UPDATE</span></div></div>
+      <section class="panel log-window">
+        <div class="log-toolbar">
+          <div class="log-search"><span>⌕</span><input id="log-search" type="search" placeholder="메시지, 공정 또는 유닛 검색"></div>
+          <select id="log-process-filter"><option value="ALL">전체 공정</option><option>P00</option><option>P01</option><option>P02</option><option>P03</option><option>P04</option><option>P05</option><option>P06</option><option value="SYSTEM">SYSTEM</option></select>
+          <select id="log-type-filter"><option value="ALL">전체 유형</option><option>PROCESS</option><option>TX</option><option>RX</option><option>CAN</option><option>VISION</option><option value="SCARA">Dobot</option><option>PRESS</option><option>MES</option><option>LIGHT</option><option>ERROR</option><option>SETTING</option></select>
+          <button id="log-pause" class="secondary">표시 일시정지</button>
+        </div>
+        <div class="log-summary"><span><b id="log-visible-count">0</b> 표시</span><span><b id="log-error-count">0</b> 오류</span><span id="log-last-time">마지막 이벤트 —</span></div>
+        <div class="log-table-head"><span>시간</span><span>유형</span><span>공정</span><span>유닛</span><span>메시지</span></div>
+        <div id="log-table" class="log-table"></div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

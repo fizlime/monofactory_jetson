@@ -1,0 +1,28 @@
+# Local Python environments and caches
+.venv/
+.venv-jetson/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Runtime logs, backups and local agent files
+*.log
+work/
+.agents/
+.codex/
+node_modules/
+
+# Local credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editor and operating system files
+.DS_Store
+Thumbs.db
+.idea/
